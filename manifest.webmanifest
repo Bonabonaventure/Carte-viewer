@@ -1,0 +1,11 @@
+{
+  "name": "Carte Viewer",
+  "short_name": "Carte Viewer",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#eef2f5",
+  "theme_color": "#17202a",
+  "lang": "fr",
+  "description": "Visualiseur générique de cartes HTML locales avec géolocalisation et fonctionnement hors connexion."
+}
