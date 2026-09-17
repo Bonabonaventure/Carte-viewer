@@ -1,5 +1,5 @@
-const CACHE_NAME = 'carte-viewer-v1';
-const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './service-worker.js'];
+const CACHE_NAME = 'carte-viewer-v2';
+const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './service-worker.js', './mobile-pan.mjs'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)));
