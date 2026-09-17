@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#17202a">
+  <title>Carte Viewer</title>
+  <link rel="manifest" href="./manifest.webmanifest">
+  <style>
+    :root{font-family:Segoe UI,Roboto,Arial,sans-serif;color:#17202a;background:#eef2f5}
+    *{box-sizing:border-box}html,body{height:100%;margin:0}body{display:grid;grid-template-rows:auto 1fr;min-height:100dvh}
+    header{background:#fff;border-bottom:1px solid #c9d1d8;padding:10px 12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;z-index:2}
+    h1{font-size:1rem;margin:0 8px 0 0}.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    button,.file-label{font:inherit;border:1px solid #8795a1;background:#fff;border-radius:6px;padding:8px 11px;cursor:pointer}
+    button.primary,.file-label.primary{background:#1f5d88;color:#fff;border-color:#1f5d88}
+    input[type=file]{position:absolute;inline-size:1px;block-size:1px;opacity:0;pointer-events:none}
+    #status{font-size:.82rem;color:#45525d;min-width:200px;flex:1}
+    #status.error{color:#8b1e1e;font-weight:600}#status.ok{color:#176b3a}
+    main{position:relative;min-height:0}.empty{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:#53616d}
+    iframe{width:100%;height:100%;border:0;display:none;background:white}
+    .card{max-width:650px;background:#fff;border:1px solid #ccd5dc;border-radius:10px;padding:18px;box-shadow:0 2px 8px #0001;line-height:1.45}
+    .card strong{color:#17202a}.small{font-size:.84rem}
+    @media(max-width:700px){header{align-items:stretch}.actions{width:100%}.actions>*{flex:1 1 auto;text-align:center}#status{width:100%}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Carte Viewer</h1>
+  <div class="actions">
+    <label class="file-label primary" for="fileInput">Ouvrir une carte</label>
+    <input id="fileInput" type="file" accept=".html,.htm,text/html">
+    <button id="testLocation" type="button">Tester la localisation</button>
+    <button id="closeMap" type="button" hidden>Fermer la carte</button>
+  </div>
+  <div id="status">Prêt. La carte choisie reste locale au navigateur.</div>
+</header>
+<main>
+  <div id="empty" class="empty"><div class="card"><strong>Mode d’emploi</strong><br>1. Ouvrez cette page une première fois avec Internet.<br>2. Autorisez la localisation quand le navigateur la demande.<br>3. Choisissez votre fichier carte HTML local.<br>4. Après mise en cache, ce visualiseur peut se rouvrir hors connexion.<p class="small">Le fichier sélectionné est lu localement par JavaScript. Il n’est pas téléversé par ce visualiseur.</p></div></div>
+  <iframe id="viewer" title="Carte locale" allow="geolocation"></iframe>
+</main>
+<script>
+(() => {
+  const fileInput = document.getElementById('fileInput');
+  const viewer = document.getElementById('viewer');
+  const empty = document.getElementById('empty');
+  const status = document.getElementById('status');
+  const testLocation = document.getElementById('testLocation');
+  const closeMap = document.getElementById('closeMap');
+
+  function setStatus(message, kind='') {
+    status.textContent = message;
+    status.className = kind;
+  }
+
+  async function readHtml(file) {
+    const text = await file.text();
+    const start = text.slice(0, 2000).toLowerCase();
+    if (!start.includes('<html') && !start.includes('<!doctype html')) {
+      throw new Error('Le fichier choisi ne ressemble pas à une page HTML.');
+    }
+    return text;
+  }
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    setStatus(`Lecture locale de ${file.name}…`);
+    try {
+      const html = await readHtml(file);
+      viewer.srcdoc = html;
+      viewer.style.display = 'block';
+      empty.style.display = 'none';
+      closeMap.hidden = false;
+      setStatus(`${file.name} affiché localement.`, 'ok');
+    } catch (error) {
+      viewer.removeAttribute('srcdoc');
+      viewer.style.display = 'none';
+      empty.style.display = 'grid';
+      closeMap.hidden = true;
+      setStatus(error?.message || 'Impossible d’ouvrir cette carte.', 'error');
+    } finally {
+      fileInput.value = '';
+    }
+  });
+
+  closeMap.addEventListener('click', () => {
+    viewer.removeAttribute('srcdoc');
+    viewer.src = 'about:blank';
+    viewer.style.display = 'none';
+    empty.style.display = 'grid';
+    closeMap.hidden = true;
+    setStatus('Carte fermée. Les données locales ont été retirées de l’affichage.');
+  });
+
+  testLocation.addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      setStatus('API de géolocalisation absente de ce navigateur.', 'error');
+      return;
+    }
+    if (!window.isSecureContext) {
+      setStatus('Cette page n’est pas dans un contexte sécurisé HTTPS.', 'error');
+      return;
+    }
+    setStatus('Recherche de la position…');
+    navigator.geolocation.getCurrentPosition(
+      p => setStatus(`Localisation OK — précision annoncée ± ${Math.round(p.coords.accuracy)} m.`, 'ok'),
+      e => {
+        const msg = {1:'permission refusée',2:'position indisponible',3:'délai dépassé'}[e.code] || 'erreur inconnue';
+        setStatus(`Échec de localisation : ${msg}.`, 'error');
+      },
+      {enableHighAccuracy:true, timeout:20000, maximumAge:0}
+    );
+  });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        await navigator.serviceWorker.register('./service-worker.js', {scope:'./'});
+      } catch (error) {
+        console.warn('Service worker non enregistré', error);
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
