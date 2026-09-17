@@ -1,4 +1,4 @@
-const CACHE_NAME = 'carte-viewer-v2';
+const CACHE_NAME = 'carte-viewer-v3';
 const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './service-worker.js', './mobile-pan.mjs'];
 
 self.addEventListener('install', event => {
