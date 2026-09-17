@@ -38,7 +38,9 @@
   <div id="empty" class="empty"><div class="card"><strong>Mode d’emploi</strong><br>1. Ouvrez cette page une première fois avec Internet.<br>2. Autorisez la localisation quand le navigateur la demande.<br>3. Choisissez votre fichier carte HTML local.<br>4. Après mise en cache, ce visualiseur peut se rouvrir hors connexion.<p class="small">Le fichier sélectionné est lu localement par JavaScript. Il n’est pas téléversé par ce visualiseur.</p></div></div>
   <iframe id="viewer" title="Carte locale" allow="geolocation"></iframe>
 </main>
-<script>
+<script type="module">
+import { enhanceMapHtml } from './mobile-pan.mjs';
+
 (() => {
   const fileInput = document.getElementById('fileInput');
   const viewer = document.getElementById('viewer');
@@ -66,7 +68,7 @@
     if (!file) return;
     setStatus(`Lecture locale de ${file.name}…`);
     try {
-      const html = await readHtml(file);
+      const html = enhanceMapHtml(await readHtml(file));
       viewer.srcdoc = html;
       viewer.style.display = 'block';
       empty.style.display = 'none';
