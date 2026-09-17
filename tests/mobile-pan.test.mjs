@@ -17,6 +17,14 @@ test('injects mobile pan optimization into compatible generated maps', () => {
   assert.match(out, /translate3d/);
 });
 
+test('injects two-pointer pinch-to-zoom support', () => {
+  const out = enhanceMapHtml(mapHtml);
+  assert.match(out, /cvPointers/);
+  assert.match(out, /Math\.log2/);
+  assert.match(out, /scale\(/);
+  assert.match(out, /cvPinch/);
+});
+
 test('does not alter unrelated html', () => {
   const plain = '<!doctype html><html><body>Hello</body></html>';
   assert.equal(enhanceMapHtml(plain), plain);
